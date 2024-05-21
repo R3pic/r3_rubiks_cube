@@ -4,6 +4,8 @@ import cv2
 from .color import COLORS, ColorUtils
 from .cube import Cube
 
+# 색상이 unknown인 경우에는 캡쳐가 되지 않도록 해야한다.
+
 class ColorDetectorThread(QThread):
     color_detected = pyqtSignal(str, tuple)
 
@@ -39,8 +41,7 @@ class ColorDetectorThread(QThread):
                     color = ColorUtils.get_bgr_color(color_name)
                     cv2.rectangle(roi, (sub_x, sub_y), (sub_x + sub_roi_size, sub_y + sub_roi_size), color, 2)
                     cv2.putText(roi, color_name, (sub_x + 10, sub_y + sub_roi_size // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                    color_data = ColorUtils.color_to_face(color_name)
-                    self.face_info += color_data
+                    self.face_info += color_name
 
             frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size] = roi
 
@@ -53,15 +54,20 @@ class ColorDetectorThread(QThread):
 
     def save_color_info(self):
         if len(self.face_info) != 9:
-            print("Face information is invalid:", self.face_info)
+            print("Face information is invalid length:", self.face_info)
             return
+        
+        center = self.face_info[4]
+        captured_face = ColorUtils.color_string_to_face(self.face_info)
+
+        print("captured face info:", self.face_info)
+        print("captured face:", captured_face)
+        print("center:", center)
+
         if "u" in self.face_info:
-            print("Face information is invalid:", self.face_info)
+            print("Face information is invalid color:", self.face_info)
             return
 
-        print("Color information saved:", self.face_info)
-        print(f'Face Color is {self.face_info[4]}')
-        center = self.face_info[4]
         self.cube.updateFace(center, self.face_info)
 
     def standard_color_update(self, color_name, hsv):
