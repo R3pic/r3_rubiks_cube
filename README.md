@@ -1,6 +1,4 @@
-# rubiks_cube
-
-큐브인식하기
+# r3_rubiks_cube_solver
 
 ## 기능
 
@@ -15,3 +13,7 @@
 ## 사용된 라이브러리
 
 check requirements.txt
+
+## 사용법
+
+python main.py
