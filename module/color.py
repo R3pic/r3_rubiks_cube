@@ -106,6 +106,10 @@ class ColorUtils:
             if np.all(lower <= hsv) and np.all(hsv <= upper):
                 return color_name
         return 'u'
+    
+    @staticmethod
+    def color_string_to_face(color_string: str) -> str:
+        return "".join([ColorUtils.color_to_face(color) for color in color_string])
 
 def reset_COLORS():
     global COLORS
