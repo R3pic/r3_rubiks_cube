@@ -6,35 +6,22 @@ from .color import ColorUtils
 
 class Cube:
     def __init__(self, cube_str=None):
-        if cube_str:
-            self.cube = {
-                'U': cube_str[:9],
-                'L': cube_str[9:18],
-                'F': cube_str[18:27],
-                'R': cube_str[27:36],
-                'B': cube_str[36:45],
-                'D': cube_str[45:]
-            }
-        else:
-            self.cube = {
-                'U': 'yyyyyyyyy',
-                'L': 'bbbbbbbbb',
-                'F': 'rrrrrrrrr',
-                'R': 'ggggggggg',
-                'B': 'ooooooooo',
-                'D': 'wwwwwwwww'
-            }
+        # default_cube = 'yyyyyyyyybbbbbbbbbrrrrrrrrrgggggggggooooooooowwwwwwwww'
+        default_cube = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
+        self.cube = {
+            'U': cube_str[:9] if cube_str else default_cube[:9],
+            'R': cube_str[9:18] if cube_str else default_cube[9:18],
+            'F': cube_str[18:27] if cube_str else default_cube[18:27],
+            'D': cube_str[27:36] if cube_str else default_cube[27:36],
+            'L': cube_str[36:45] if cube_str else default_cube[36:45],
+            'B': cube_str[45:] if cube_str else default_cube[45:]
+        }
 
     def reset(self):
-        self.cube = {
-            'U': 'yyyyyyyyy',
-            'L': 'bbbbbbbbb',
-            'F': 'rrrrrrrrr',
-            'R': 'ggggggggg',
-            'B': 'ooooooooo',
-            'D': 'wwwwwwwww'
-        }
-        self.draw()
+        self.__init__()
+
+    def _parse_face(self):
+        return ''.join([self.cube['U'], self.cube['R'], self.cube['F'], self.cube['D'], self.cube['L'], self.cube['B']])
 
     def show(self):
         print(self)
@@ -75,59 +62,38 @@ class Cube:
             print("Invalid cube state")
             return
         
-        cubestring = self.__parse_face()
+        cubestring = self._parse_face()
         moves = kociemba.solve(cubestring)
         return moves
 
     def is_valid(self):
         try:
-            kociemba.solve(self.__parse_face())
+            kociemba.solve(self._parse_face())
             return True
         except ValueError as e:
             return False
-    
-    def __parse_face(self):
-        face_colors = ""
-        for face in ['U', 'R', 'F', 'D', 'L', 'B']:
-            face_colors += self.cube[face]
-        cubestring = ""
-        for c in face_colors:
-            cubestring += ColorUtils.color_to_face(c)
-        return cubestring
-
-    def __str__(self) -> str:
-        return f"""
-                | {self.cube['U'][0]}  | {self.cube['U'][1]}  | {self.cube['U'][2]}  |
-                | {self.cube['U'][3]}  | {self.cube['U'][4]}  | {self.cube['U'][5]}  |
-                | {self.cube['U'][6]}  | {self.cube['U'][7]}  | {self.cube['U'][8]}  |
-| {self.cube['L'][0]}  | {self.cube['L'][1]}  | {self.cube['L'][2]}  || {self.cube['F'][0]}  | {self.cube['F'][1]}  | {self.cube['F'][2]}  || {self.cube['R'][0]}  | {self.cube['R'][1]}  | {self.cube['R'][2]}  || {self.cube['B'][0]}  | {self.cube['B'][1]}  | {self.cube['B'][2]}  |
-| {self.cube['L'][3]}  | {self.cube['L'][4]}  | {self.cube['L'][5]}  || {self.cube['F'][3]}  | {self.cube['F'][4]}  | {self.cube['F'][5]}  || {self.cube['R'][3]}  | {self.cube['R'][4]}  | {self.cube['R'][5]}  || {self.cube['B'][3]}  | {self.cube['B'][4]}  | {self.cube['B'][5]}  |
-| {self.cube['L'][6]}  | {self.cube['L'][7]}  | {self.cube['L'][8]}  || {self.cube['F'][6]}  | {self.cube['F'][7]}  | {self.cube['F'][8]}  || {self.cube['R'][6]}  | {self.cube['R'][7]}  | {self.cube['R'][8]}  || {self.cube['B'][6]}  | {self.cube['B'][7]}  | {self.cube['B'][8]}  |
-                | {self.cube['D'][0]}  | {self.cube['D'][1]}  | {self.cube['D'][2]}  |
-                | {self.cube['D'][3]}  | {self.cube['D'][4]}  | {self.cube['D'][5]}  |
-                | {self.cube['D'][6]}  | {self.cube['D'][7]}  | {self.cube['D'][8]}  |"""
 
 
-def draw_face(img, face_colors, start_x, start_y, square_size):
+def draw_face(img, faces, start_x, start_y, square_size):
     for i in range(3):
         for j in range(3):
-            color = face_colors[i * 3 + j]
+            face = faces[i * 3 + j]
             cv2.rectangle(img, 
                           (start_x + j * square_size, start_y + i * square_size), 
                           (start_x + (j + 1) * square_size, start_y + (i + 1) * square_size), 
-                          colors_bgr[color], -1)
+                          colors_bgr[face], -1)
             cv2.rectangle(img, 
                           (start_x + j * square_size, start_y + i * square_size), 
                           (start_x + (j + 1) * square_size, start_y + (i + 1) * square_size), 
                           (0, 0, 0), 1)
 
 colors_bgr = {
-    'r': (0, 0, 255),  # Red
-    'g': (0, 255, 0),  # Green
-    'b': (255, 0, 0),  # Blue
-    'y': (0, 255, 255),  # Yellow
-    'w': (255, 255, 255),  # White
-    'o': (0, 165, 255)   # Orange
+    'L': (0, 0, 255),  # Red
+    'F': (0, 255, 0),  # Green
+    'B': (255, 0, 0),  # Blue
+    'U': (0, 255, 255),  # Yellow
+    'D': (255, 255, 255),  # White
+    'R': (0, 165, 255)   # Orange
 }
 
 if __name__ == "__main__":

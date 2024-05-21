@@ -68,23 +68,23 @@ class ColorUtils:
     @staticmethod
     def color_to_face(color_name: str):
         return {
-            'r': 'F',
-            'g': 'R',
-            'b': 'L',
+            'g': 'F',
+            'o': 'R',
+            'r': 'L',
             'y': 'U',
             'w': 'D',
-            'o': 'B'
+            'b': 'B'
         }.get(color_name, 'U')
     
     @staticmethod
     def face_to_color(face_name: str):
         return {
-            'F': 'r',
-            'R': 'g',
-            'L': 'b',
+            'F': 'g',
+            'R': 'o',
+            'L': 'r',
             'U': 'y',
             'D': 'w',
-            'B': 'o'
+            'B': 'b'
         }.get(face_name, 'u')
 
     @staticmethod

@@ -39,7 +39,8 @@ class ColorDetectorThread(QThread):
                     color = ColorUtils.get_bgr_color(color_name)
                     cv2.rectangle(roi, (sub_x, sub_y), (sub_x + sub_roi_size, sub_y + sub_roi_size), color, 2)
                     cv2.putText(roi, color_name, (sub_x + 10, sub_y + sub_roi_size // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                    self.face_info += color_name
+                    color_data = ColorUtils.color_to_face(color_name)
+                    self.face_info += color_data
 
             frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size] = roi
 
@@ -60,8 +61,8 @@ class ColorDetectorThread(QThread):
 
         print("Color information saved:", self.face_info)
         print(f'Face Color is {self.face_info[4]}')
-        face = ColorUtils.color_to_face(self.face_info[4])
-        self.cube.updateFace(face, self.face_info)
+        center = self.face_info[4]
+        self.cube.updateFace(center, self.face_info)
 
     def standard_color_update(self, color_name, hsv):
         COLORS[color_name].update_hsv(hsv)
