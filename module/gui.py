@@ -2,8 +2,8 @@ import os
 import sys
 import colorsys
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QLineEdit
+from PyQt5.QtGui import QKeyEvent, QPixmap
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,6 +18,7 @@ class App(QMainWindow):
         self.setGeometry(100, 100, 1280, 720)
         self.sliders = {}  # Initialize the dictionary to store slider and label references
         self.cube = Cube()
+        self.cube.error_signal.connect(lambda msg: self.solve_moves_label.setText(msg))
         self.color_detector_thread = ColorDetectorThread(self.cube)
         self.color_detector_thread.color_detected.connect(self.gui_update)
         self.color_detector_thread.frame_ready.connect(self.update_video_frame)
@@ -55,14 +56,18 @@ class App(QMainWindow):
         self.video_frame.setMinimumSize(640, 420)
         self.rightLayout.addWidget(self.video_frame)
 
-        self.solve_moves_label = QLabel('Solve Moves : ')
+        self.solve_moves_label = QLineEdit('Solve Moves : ')
+        self.solve_moves_label.setReadOnly(True)
+        self.solve_moves_label.setStyleSheet('font-size: 15px;')
+        self.solve_moves_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.solve_moves_label.setContentsMargins(10, 10, 10, 10)
         self.rightLayout.addWidget(self.solve_moves_label)
-        self.solve_moves_label.setMinimumHeight(50)
+        self.solve_moves_label.setMinimumHeight(100)
 
         self.rightLayout.addStretch()
         self.capture_button = QPushButton('Cube Capture')
         self.capture_button.setMinimumHeight(50)
-        self.capture_button.clicked.connect(lambda: self.color_detector_thread.save_color_info())
+        self.capture_button.clicked.connect(self.clicked_capture_button)
         self.rightLayout.addWidget(self.capture_button)
 
         # 큐브 해답 버튼 추가
@@ -70,6 +75,21 @@ class App(QMainWindow):
         self.solve_button.setMinimumHeight(50)
         self.solve_button.clicked.connect(self.clicked_solve)
         self.rightLayout.addWidget(self.solve_button)
+
+    def keyPressEvent(self, a0: QKeyEvent | None) -> None:
+        key = a0.key()
+        if key == Qt.Key_S:
+            self.clicked_capture_button()
+        elif key == Qt.Key_Return:
+            self.clicked_solve()
+        elif key == Qt.Key_R:
+            self.pressed_Key_R()
+        else:
+            super().keyPressEvent(a0)
+
+    def pressed_Key_R(self):
+        self.cube.reset()
+        self.solve_moves_label.setText('Solve Moves : ')
 
     def add_color_sliders(self, color_name: str, color_hsv: Color_HSV):
         # 그룹 레이아웃
@@ -159,20 +179,6 @@ class App(QMainWindow):
         color_display.setStyleSheet(f'background-color: {self.hsv_to_rgb_css((h, s, v))}')
         value_label.setText(f'({h}, {s}, {v})')
 
-        h, s, v = current_color.main_hsv
-
-        hue_slider.blockSignals(True)
-        sat_slider.blockSignals(True)
-        val_slider.blockSignals(True)
-
-        hue_slider.setValue(h)
-        sat_slider.setValue(s)
-        val_slider.setValue(v)
-
-        hue_slider.blockSignals(False)
-        sat_slider.blockSignals(False)
-        val_slider.blockSignals(False)
-
     def clicked_solve(self):
         print("Solve Button Clicked")
         try:
@@ -180,7 +186,10 @@ class App(QMainWindow):
             print(f'해답 : {moves}')
             self.solve_moves_label.setText(f'Solve Moves : {moves}')
         except ValueError as e:
-            print(e)
+            self.solve_moves_label.setText(f'{str(e)}')
+
+    def clicked_capture_button(self):
+        self.color_detector_thread.save_color_info()
     
     def gui_update(self, color_name, hsv):
         h_slider: QSlider = self.sliders[color_name]['hue_slider']

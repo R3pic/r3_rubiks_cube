@@ -1,11 +1,15 @@
 import cv2
 import numpy as np
 import kociemba
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from .color import ColorUtils
 
-class Cube:
+class Cube(QObject):
+    error_signal = pyqtSignal(str)
+
     def __init__(self, cube_str=None):
+        super().__init__()
         # default_cube = 'yyyyyyyyybbbbbbbbbrrrrrrrrrgggggggggooooooooowwwwwwwww'
         default_cube = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
         self.cube = {
@@ -16,6 +20,7 @@ class Cube:
             'L': cube_str[36:45] if cube_str else default_cube[36:45],
             'B': cube_str[45:] if cube_str else default_cube[45:]
         }
+        # self.draw()
 
     def reset(self):
         self.__init__()
@@ -47,11 +52,6 @@ class Cube:
         draw_face(img, self.cube['L'], *positions['L'], square_size)
         draw_face(img, self.cube['R'], *positions['R'], square_size)
 
-        if self.is_valid():
-            cv2.putText(img, "Valid", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-        else:
-            cv2.putText(img, "Invalid", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-
         cv2.imshow('Cube', img)
 
     def updateFace(self, center, colors):
@@ -59,20 +59,27 @@ class Cube:
         self.draw()
 
     def solve(self):
-        if not self.is_valid():
-            print("Invalid cube state")
+        result, message = self.is_valid()
+        if not result:
+            print(f"from Cube.solve() {message}")
             return
         
         cubestring = self._parse_face()
         moves = kociemba.solve(cubestring)
         return moves
 
-    def is_valid(self):
+    def is_valid(self) -> tuple[bool, str]:
         try:
             kociemba.solve(self._parse_face())
-            return True
+            return (True, "You Can Solve This Cube")
         except ValueError as e:
-            return False
+            e_str = str(e)
+            if "Probably" in e_str:
+                self.error_signal.emit("This Cube is Invalid")
+                return (False, "This Cube is Invalid")
+            else:
+                self.error_signal.emit(e_str)
+                return (False, e_str)
 
 
 def draw_face(img, faces, start_x, start_y, square_size):

@@ -19,7 +19,6 @@ class ColorDetectorThread(QThread):
 
     def run(self):
         print("Thread is running")
-        self.cube.draw()
         while self.cap.isOpened():
             ret, frame = self.cap.read()
             if not ret:
