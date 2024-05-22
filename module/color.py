@@ -21,10 +21,12 @@ class Color_HSV:
         else:
             self.main_hsv = (min_hsv[0] + 10, min_hsv[1] + 50, min_hsv[2] + 50)
 
-    def update_hsv(self, hsv):
-        self.max_hsv = hsv
-        self.min_hsv = (hsv[0] - 10, hsv[1] - 50, hsv[2] - 50)
-        self.max_hsv = (hsv[0] + 10, hsv[1] + 50, 255)
+    def update_hsv(self, hsv: tuple[int, int, int]):
+        self.main_hsv = hsv
+        self.min_hsv = np.clip((hsv[0] - 10, hsv[1] - 50, hsv[2] - 50), 0, 255)
+        self.max_hsv = np.clip((hsv[0] + 10, hsv[1] + 50, 255), 0, 255)
+
+        print("Updated HSV:", self)
 
     def set_hsv(self, hsv):
         self.main_hsv = hsv

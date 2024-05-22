@@ -1,15 +1,17 @@
+import os
 import sys
 import colorsys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from .color import Color_HSV, COLORS, ColorUtils
-from .cube import Cube
-from .color_detector import ColorDetectorThread
+from module.color import Color_HSV, COLORS, ColorUtils
+from module.cube import Cube
+from module.color_detector import ColorDetectorThread
 
 class App(QMainWindow):
-    def __init__(self):
+    def __init__(self, auto_detect=True):
         super().__init__()
         self.setWindowTitle('Cube Color Detection Option Panel')
         self.setGeometry(100, 100, 800, 600)
@@ -18,7 +20,8 @@ class App(QMainWindow):
         self.color_detector_thread = ColorDetectorThread(self.cube)
         self.color_detector_thread.color_detected.connect(self.gui_update)
         self.init_UI()
-        self.color_detector_thread.start()
+        if auto_detect:
+            self.color_detector_thread.start()
 
     def init_UI(self):
         # 메인 위젯 생성
@@ -41,12 +44,14 @@ class App(QMainWindow):
         # 캡쳐 버튼 추가
         self.layout.addStretch()
         self.capture_button = QPushButton('Cube Capture')
+        self.capture_button.setMinimumHeight(50)
         self.capture_button.clicked.connect(lambda: self.color_detector_thread.save_color_info())
         self.layout.addWidget(self.capture_button)
 
         # 큐브 해답 버튼 추가
         self.layout.addStretch()
         self.solve_button = QPushButton('Solve')
+        self.solve_button.setMinimumHeight(50)
         self.solve_button.clicked.connect(self.clicked_solve)
         self.layout.addWidget(self.solve_button)
 
@@ -130,14 +135,33 @@ class App(QMainWindow):
         h = hue_slider.value()
         s = sat_slider.value()
         v = val_slider.value()
+
+        print(f'{color_name} color updated to ({h}, {s}, {v})')
+        current_color = COLORS[ColorUtils.get_short_color_name(color_name)]
+        current_color.update_hsv((h, s, v))
+
         color_display.setStyleSheet(f'background-color: {self.hsv_to_rgb_css((h, s, v))}')
         value_label.setText(f'({h}, {s}, {v})')
+
+        h, s, v = current_color.main_hsv
+
+        hue_slider.blockSignals(True)
+        sat_slider.blockSignals(True)
+        val_slider.blockSignals(True)
+
+        hue_slider.setValue(h)
+        sat_slider.setValue(s)
+        val_slider.setValue(v)
+
+        hue_slider.blockSignals(False)
+        sat_slider.blockSignals(False)
+        val_slider.blockSignals(False)
 
     def clicked_solve(self):
         print("Solve Button Clicked")
         try:
             moves = self.cube.solve()
-            print(moves)
+            print(f'해답 : {moves}')
         except ValueError as e:
             print(e)
     
@@ -164,11 +188,11 @@ class App(QMainWindow):
         print(f'{color_name} color updated to {hsv}')
         print(f"Current COLORS MAP : {str(COLORS)}")
 
-def start():
+def start(auto_detect=True):
     app = QApplication(sys.argv)
-    main_window = App()
+    main_window = App(auto_detect)
     main_window.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    start()
+    start(auto_detect=False)

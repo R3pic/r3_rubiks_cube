@@ -22,7 +22,7 @@ class ColorDetectorThread(QThread):
             ret, frame = self.cap.read()
             if not ret:
                 break
-            # ROI
+            # ROI 설정
             height, width, _ = frame.shape
             roi_size = min(height, width) // 2
             roi_x = (width - roi_size) // 2
@@ -39,8 +39,16 @@ class ColorDetectorThread(QThread):
                     hsv_pixel = sub_roi[sub_roi_size // 2, sub_roi_size // 2]
                     color_name = ColorUtils.get_color_name(hsv_pixel)
                     color = ColorUtils.get_bgr_color(color_name)
+                    
+                    # 작은 ROI 그리기
                     cv2.rectangle(roi, (sub_x, sub_y), (sub_x + sub_roi_size, sub_y + sub_roi_size), color, 2)
-                    cv2.putText(roi, color_name, (sub_x + 10, sub_y + sub_roi_size // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    
+                    # 작은 ROI 내부의 중앙에 색상을 검출하는 지점 가시화
+                    cv2.circle(roi, (sub_x + sub_roi_size // 2, sub_y + sub_roi_size // 2), 2, (0, 0, 0), -1)
+                    
+                    # 작은 ROI의 중앙 상단에 글씨 표시 (글씨를 위로 이동)
+                    cv2.putText(roi, color_name, (sub_x + sub_roi_size // 2 - 8, sub_y + sub_roi_size // 2 - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+                    
                     self.face_info += color_name
 
             frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size] = roi
