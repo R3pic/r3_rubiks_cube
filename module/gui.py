@@ -3,6 +3,7 @@ import sys
 import colorsys
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton
+from PyQt5.QtGui import QPixmap
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -14,11 +15,12 @@ class App(QMainWindow):
     def __init__(self, auto_detect=True):
         super().__init__()
         self.setWindowTitle('Cube Color Detection Option Panel')
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1280, 720)
         self.sliders = {}  # Initialize the dictionary to store slider and label references
         self.cube = Cube()
         self.color_detector_thread = ColorDetectorThread(self.cube)
         self.color_detector_thread.color_detected.connect(self.gui_update)
+        self.color_detector_thread.frame_ready.connect(self.update_video_frame)
         self.init_UI()
         if auto_detect:
             self.color_detector_thread.start()
@@ -27,11 +29,17 @@ class App(QMainWindow):
         # 메인 위젯 생성
         self.mainWidget = QWidget()
         self.setCentralWidget(self.mainWidget)
-        self.layout: QVBoxLayout = QVBoxLayout()
+        self.layout: QHBoxLayout = QHBoxLayout()
         self.mainWidget.setLayout(self.layout)
 
+        self.leftLayout = QVBoxLayout()
+        self.rightLayout = QVBoxLayout()
+
+        self.layout.addLayout(self.leftLayout)
+        self.layout.addLayout(self.rightLayout)
+
         self.label = QLabel('Cube Color Detection Option Panel')
-        self.layout.addWidget(self.label)
+        self.leftLayout.addWidget(self.label)
 
         # 슬라이더 추가
         self.add_color_sliders('Red', COLORS['r'])
@@ -41,19 +49,27 @@ class App(QMainWindow):
         self.add_color_sliders('White', COLORS['w'])
         self.add_color_sliders('Orange', COLORS['o'])
 
+        # 우측 레이아웃
         # 캡쳐 버튼 추가
-        self.layout.addStretch()
+        self.video_frame = QLabel()
+        self.video_frame.setMinimumSize(640, 420)
+        self.rightLayout.addWidget(self.video_frame)
+
+        self.solve_moves_label = QLabel('Solve Moves : ')
+        self.rightLayout.addWidget(self.solve_moves_label)
+        self.solve_moves_label.setMinimumHeight(50)
+
+        self.rightLayout.addStretch()
         self.capture_button = QPushButton('Cube Capture')
         self.capture_button.setMinimumHeight(50)
         self.capture_button.clicked.connect(lambda: self.color_detector_thread.save_color_info())
-        self.layout.addWidget(self.capture_button)
+        self.rightLayout.addWidget(self.capture_button)
 
         # 큐브 해답 버튼 추가
-        self.layout.addStretch()
         self.solve_button = QPushButton('Solve')
         self.solve_button.setMinimumHeight(50)
         self.solve_button.clicked.connect(self.clicked_solve)
-        self.layout.addWidget(self.solve_button)
+        self.rightLayout.addWidget(self.solve_button)
 
     def add_color_sliders(self, color_name: str, color_hsv: Color_HSV):
         # 그룹 레이아웃
@@ -74,7 +90,7 @@ class App(QMainWindow):
         update_button.clicked.connect(lambda: self.standard_color_update(color_name))
         group_layout.addWidget(update_button)
 
-        self.layout.addLayout(group_layout)
+        self.leftLayout.addLayout(group_layout)
 
         # 슬라이더 레이아웃
         hsv_layout = QGridLayout()
@@ -103,7 +119,7 @@ class App(QMainWindow):
         hsv_layout.addWidget(val_label, 2, 0)
         hsv_layout.addWidget(val_slider, 2, 1)
 
-        self.layout.addLayout(hsv_layout)
+        self.leftLayout.addLayout(hsv_layout)
 
         # 슬라이더 저장
         self.sliders[color_name] = {
@@ -162,6 +178,7 @@ class App(QMainWindow):
         try:
             moves = self.cube.solve()
             print(f'해답 : {moves}')
+            self.solve_moves_label.setText(f'Solve Moves : {moves}')
         except ValueError as e:
             print(e)
     
@@ -187,6 +204,9 @@ class App(QMainWindow):
 
         print(f'{color_name} color updated to {hsv}')
         print(f"Current COLORS MAP : {str(COLORS)}")
+
+    def update_video_frame(self, qt_img):
+        self.video_frame.setPixmap(QPixmap.fromImage(qt_img))
 
 def start(auto_detect=True):
     app = QApplication(sys.argv)

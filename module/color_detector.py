@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtGui import QImage
 import cv2
 
 from .color import COLORS, ColorUtils
@@ -8,6 +9,7 @@ from .cube import Cube
 
 class ColorDetectorThread(QThread):
     color_detected = pyqtSignal(str, tuple)
+    frame_ready = pyqtSignal(QImage)
 
     def __init__(self, cube):
         super().__init__()
@@ -46,15 +48,22 @@ class ColorDetectorThread(QThread):
                     # 작은 ROI 내부의 중앙에 색상을 검출하는 지점 가시화
                     cv2.circle(roi, (sub_x + sub_roi_size // 2, sub_y + sub_roi_size // 2), 2, (0, 0, 0), -1)
                     
-                    # 작은 ROI의 중앙 상단에 글씨 표시 (글씨를 위로 이동)
+                    # 작은 ROI의 중앙 상단에 글씨 표시
                     cv2.putText(roi, color_name, (sub_x + sub_roi_size // 2 - 8, sub_y + sub_roi_size // 2 - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
                     
                     self.face_info += color_name
 
             frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size] = roi
 
-            cv2.circle(frame, (width // 2, height // 2), 10, (255, 255, 255), 2)
-            cv2.imshow('Cube Color Detection', frame)
+            cv2.circle(frame, (width // 2, height // 2), 10, (255, 255, 255), 1)
+
+            # Qt에서 사용할 수 있는 이미지로 변환
+            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+            self.frame_ready.emit(qt_image)
             cv2.waitKey(1)
 
         self.cap.release()
