@@ -57,8 +57,8 @@ class ColorDetectorThread(QThread):
             print("Face information is invalid length:", self.face_info)
             return
         
-        center = self.face_info[4]
         captured_face = ColorUtils.color_string_to_face(self.face_info)
+        center = captured_face[4]
 
         print("captured face info:", self.face_info)
         print("captured face:", captured_face)
@@ -68,7 +68,7 @@ class ColorDetectorThread(QThread):
             print("Face information is invalid color:", self.face_info)
             return
 
-        self.cube.updateFace(center, self.face_info)
+        self.cube.updateFace(center, captured_face)
 
     def standard_color_update(self, color_name, hsv):
         COLORS[color_name].update_hsv(hsv)

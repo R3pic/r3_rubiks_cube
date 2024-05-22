@@ -51,10 +51,11 @@ class Cube:
             cv2.putText(img, "Valid", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
         else:
             cv2.putText(img, "Invalid", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+
         cv2.imshow('Cube', img)
 
-    def updateFace(self, face, colors):
-        self.cube[face] = colors
+    def updateFace(self, center, colors):
+        self.cube[center] = colors
         self.draw()
 
     def solve(self):
@@ -99,7 +100,7 @@ colors_bgr = {
 if __name__ == "__main__":
     cube = "wowgybwyogygybyoggrowbrgywrborwggybrbwororbwborgowryby"
     mCube = Cube(cube)
-
+    mCube.draw()
     cubestring = ""
     for c in cube:
         cubestring += ColorUtils.color_to_face(c)
