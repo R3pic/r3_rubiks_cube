@@ -68,10 +68,10 @@ class ColorDetectorThread(QThread):
         self.cap.release()
         cv2.destroyAllWindows()
 
-    def save_color_info(self):
+    def save_color_info(self) -> bool:
         if len(self.face_info) != 9:
             print("Face information is invalid length:", self.face_info)
-            return
+            return False
         
         captured_face = ColorUtils.color_string_to_face(self.face_info)
         center = captured_face[4]
@@ -82,9 +82,10 @@ class ColorDetectorThread(QThread):
 
         if "u" in self.face_info:
             print("Face information is invalid color:", self.face_info)
-            return
+            return False
 
         self.cube.updateFace(center, captured_face)
+        return True
 
     def standard_color_update(self, color_name, hsv):
         COLORS[color_name].update_hsv(hsv)

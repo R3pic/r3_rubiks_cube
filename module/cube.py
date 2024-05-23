@@ -2,11 +2,13 @@ import cv2
 import numpy as np
 import kociemba
 from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtGui import QImage
 
 from .color import ColorUtils
 
 class Cube(QObject):
-    error_signal = pyqtSignal(str)
+    # error_signal = pyqtSignal(str)
+    face_updated = pyqtSignal(QImage)
 
     def __init__(self, cube_str=None):
         super().__init__()
@@ -24,6 +26,7 @@ class Cube(QObject):
 
     def reset(self):
         self.__init__()
+        self.draw()
 
     def _parse_face(self):
         return ''.join([self.cube['U'], self.cube['R'], self.cube['F'], self.cube['D'], self.cube['L'], self.cube['B']])
@@ -32,7 +35,7 @@ class Cube(QObject):
         print(self)
 
     def draw(self):
-        img_size = 600
+        img_size = 512
         square_size = img_size // 12
         img = np.ones((img_size, img_size, 3), dtype=np.uint8) * 255
 
@@ -52,7 +55,12 @@ class Cube(QObject):
         draw_face(img, self.cube['L'], *positions['L'], square_size)
         draw_face(img, self.cube['R'], *positions['R'], square_size)
 
-        cv2.imshow('Cube', img)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        height, width, _ = img.shape
+        bytes_per_line = 3 * width
+        q_img = QImage(img.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        self.face_updated.emit(q_img)
 
     def updateFace(self, center, colors):
         self.cube[center] = colors
@@ -75,17 +83,18 @@ class Cube(QObject):
         except ValueError as e:
             e_str = str(e)
             if "Probably" in e_str:
-                self.error_signal.emit("This Cube is Invalid")
+                # self.error_signal.emit("This Cube is Invalid")
                 return (False, "This Cube is Invalid")
             else:
-                self.error_signal.emit(e_str)
+                # self.error_signal.emit(e_str)
                 return (False, e_str)
 
 
 def draw_face(img, faces, start_x, start_y, square_size):
     for i in range(3):
         for j in range(3):
-            face = faces[i * 3 + j]
+            index = i * 3 + j
+            face = faces[index]
             cv2.rectangle(img, 
                           (start_x + j * square_size, start_y + i * square_size), 
                           (start_x + (j + 1) * square_size, start_y + (i + 1) * square_size), 
@@ -94,6 +103,8 @@ def draw_face(img, faces, start_x, start_y, square_size):
                           (start_x + j * square_size, start_y + i * square_size), 
                           (start_x + (j + 1) * square_size, start_y + (i + 1) * square_size), 
                           (0, 0, 0), 1)
+            if index == 4:
+                cv2.putText(img, face, (start_x + j * square_size + 10, start_y + i * square_size + 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
 
 colors_bgr = {
     'L': (0, 0, 255),  # Red

@@ -16,15 +16,18 @@ class App(QMainWindow):
         super().__init__()
         self.setWindowTitle('Cube Color Detection Option Panel')
         self.setGeometry(100, 100, 1280, 720)
-        self.sliders = {}  # Initialize the dictionary to store slider and label references
-        self.cube = Cube()
-        self.cube.error_signal.connect(lambda msg: self.solve_moves_label.setText(msg))
-        self.color_detector_thread = ColorDetectorThread(self.cube)
-        self.color_detector_thread.color_detected.connect(self.gui_update)
-        self.color_detector_thread.frame_ready.connect(self.update_video_frame)
+        self.sliders = {}
         self.init_UI()
+        self.cube = Cube()
+        self.cube.face_updated.connect(lambda img: self.cube_view.setPixmap(QPixmap.fromImage(img)))
+        self.cube.draw()
+        # self.cube.error_signal.connect(lambda msg: self.solve_moves_label.setText(msg))
+        self.color_detector_thread = ColorDetectorThread(self.cube)
+        self.color_detector_thread.frame_ready.connect(self.update_video_frame)
+        self.color_detector_thread.color_detected.connect(self.gui_update)
         if auto_detect:
             self.color_detector_thread.start()
+
 
     def init_UI(self):
         # 메인 위젯 생성
@@ -34,7 +37,7 @@ class App(QMainWindow):
         self.mainWidget.setLayout(self.layout)
 
         self.leftLayout = QVBoxLayout()
-        self.rightLayout = QVBoxLayout()
+        self.rightLayout = QHBoxLayout()
 
         self.layout.addLayout(self.leftLayout)
         self.layout.addLayout(self.rightLayout)
@@ -51,30 +54,37 @@ class App(QMainWindow):
         self.add_color_sliders('Orange', COLORS['o'])
 
         # 우측 레이아웃
-        # 캡쳐 버튼 추가
+        self.video_layout = QVBoxLayout()
+        self.rightLayout.addLayout(self.video_layout)
+
         self.video_frame = QLabel()
         self.video_frame.setMinimumSize(640, 420)
-        self.rightLayout.addWidget(self.video_frame)
+        self.video_layout.addWidget(self.video_frame)
 
         self.solve_moves_label = QLineEdit('Solve Moves : ')
         self.solve_moves_label.setReadOnly(True)
         self.solve_moves_label.setStyleSheet('font-size: 15px;')
         self.solve_moves_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.solve_moves_label.setContentsMargins(10, 10, 10, 10)
-        self.rightLayout.addWidget(self.solve_moves_label)
+        self.video_layout.addWidget(self.solve_moves_label)
         self.solve_moves_label.setMinimumHeight(100)
 
-        self.rightLayout.addStretch()
+        self.video_layout.addStretch()
         self.capture_button = QPushButton('Cube Capture')
         self.capture_button.setMinimumHeight(50)
         self.capture_button.clicked.connect(self.clicked_capture_button)
-        self.rightLayout.addWidget(self.capture_button)
+        self.video_layout.addWidget(self.capture_button)
 
         # 큐브 해답 버튼 추가
         self.solve_button = QPushButton('Solve')
         self.solve_button.setMinimumHeight(50)
+        self.solve_button.setEnabled(False)
         self.solve_button.clicked.connect(self.clicked_solve)
-        self.rightLayout.addWidget(self.solve_button)
+        self.video_layout.addWidget(self.solve_button)
+
+        self.cube_view = QLabel()
+        self.cube_view.setMinimumSize(512, 512)
+        self.rightLayout.addWidget(self.cube_view)
 
     def keyPressEvent(self, a0: QKeyEvent | None) -> None:
         key = a0.key()
@@ -189,7 +199,16 @@ class App(QMainWindow):
             self.solve_moves_label.setText(f'{str(e)}')
 
     def clicked_capture_button(self):
-        self.color_detector_thread.save_color_info()
+        issaved = self.color_detector_thread.save_color_info()
+        if issaved:
+            result, msg = self.cube.is_valid()
+            if result:
+                self.solve_button.setEnabled(True)
+            else:
+                self.solve_button.setEnabled(False)
+            self.solve_moves_label.setText(msg)
+        else:
+            self.solve_moves_label.setText('Capture Failed.. Try Again.. unknown color detected..')
     
     def gui_update(self, color_name, hsv):
         h_slider: QSlider = self.sliders[color_name]['hue_slider']
