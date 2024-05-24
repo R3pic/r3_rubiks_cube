@@ -13,6 +13,10 @@ class Cube(QObject):
     def __init__(self, cube_str=None):
         super().__init__()
         # default_cube = 'yyyyyyyyybbbbbbbbbrrrrrrrrrgggggggggooooooooowwwwwwwww'
+        self.set_cube(cube_str)
+        # self.draw()
+
+    def set_cube(self, cube_str=None):
         default_cube = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB'
         self.cube = {
             'U': cube_str[:9] if cube_str else default_cube[:9],
@@ -22,17 +26,13 @@ class Cube(QObject):
             'L': cube_str[36:45] if cube_str else default_cube[36:45],
             'B': cube_str[45:] if cube_str else default_cube[45:]
         }
-        # self.draw()
 
     def reset(self):
-        self.__init__()
+        self.set_cube()
         self.draw()
 
     def _parse_face(self):
         return ''.join([self.cube['U'], self.cube['R'], self.cube['F'], self.cube['D'], self.cube['L'], self.cube['B']])
-
-    def show(self):
-        print(self)
 
     def draw(self):
         img_size = 512

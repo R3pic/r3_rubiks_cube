@@ -99,7 +99,8 @@ class App(QMainWindow):
 
     def pressed_Key_R(self):
         self.cube.reset()
-        self.solve_moves_label.setText('Solve Moves : ')
+        self.solve_moves_label.setText('Cube Reset.. Capture Again..')
+        self.solve_button.setEnabled(False)
 
     def add_color_sliders(self, color_name: str, color_hsv: Color_HSV):
         # 그룹 레이아웃
