@@ -101,6 +101,17 @@ class ColorUtils:
         }.get(color_name, 'u')
     
     @staticmethod
+    def get_long_color_name(short_name):
+        return {
+            'r': 'Red',
+            'g': 'Green',
+            'b': 'Blue',
+            'y': 'Yellow',
+            'w': 'White',
+            'o': 'Orange'
+        }.get(short_name, 'Unknown')
+    
+    @staticmethod
     def get_color_name(hsv: tuple[int, int, int]):
         for color_name, Color_hsv in COLORS.items():
             lower = np.array(Color_hsv.min_hsv)

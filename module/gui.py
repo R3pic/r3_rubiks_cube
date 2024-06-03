@@ -28,6 +28,9 @@ class App(QMainWindow):
         if auto_detect:
             self.color_detector_thread.start()
 
+            
+        self.capture_help_button.clicked.connect(self.color_detector_thread.start_capture_help_mode)
+
 
     def init_UI(self):
         # 메인 위젯 생성
@@ -44,6 +47,9 @@ class App(QMainWindow):
 
         self.label = QLabel('Cube Color Detection Option Panel')
         self.leftLayout.addWidget(self.label)
+
+        self.capture_help_button = QPushButton('Capture Helper Start')
+        self.leftLayout.addWidget(self.capture_help_button)
 
         # 슬라이더 추가
         self.add_color_sliders('Red', COLORS['r'])

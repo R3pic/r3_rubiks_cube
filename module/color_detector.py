@@ -13,22 +13,60 @@ class ColorDetectorThread(QThread):
 
     def __init__(self, cube):
         super().__init__()
+        self.capture_help_mode = False
+        self.capture_order_list = []
         self.cube: Cube = cube
         self.cap = cv2.VideoCapture(0)
+        self.hsv = None
+        self.frame = None
         print("WebCam is Opened:", self.cap.isOpened())
+
+    def start_capture_help_mode(self):
+        self.capture_help_mode = True
+        self.capture_order_list = ["F", "R", "B", "L", "U", "D"]
+        self.capture_order_list.reverse()
+
+        # 맨 처음에는 F면을 캡처하도록 현재 화면에 위쪽(노란색) 앞면(초록색) 아래(흰색)을 위치하도록 현재 프레임에 화살표를 그린다.
+        self.draw_help_arrow("F", self.frame)
+
+    def draw_help_arrow(self, current_center, frame):
+        cv2.putText(frame, f"Capture Helper Mode Activate Current Capture Color : {ColorUtils.get_long_color_name(ColorUtils.face_to_color(current_center))}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        if current_center == "F":
+            # U (Yellow)라는 글자가 roi의 위쪽에 위치하도록 한다.
+            cv2.putText(frame, "U (Yellow)", (frame.shape[1] // 2 - 10, frame.shape[0] // 2 - 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+            # F (Green)라는 글자가 roi의 중앙에 위치하도록 한다.
+            cv2.putText(frame, "F (Green)", (frame.shape[1] // 2 - 10, frame.shape[0] // 2 + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+            # D (White)라는 글자가 roi의 아래쪽에 위치하도록 한다.
+            cv2.putText(frame, "D (Down)", (frame.shape[1] // 2 - 10, frame.shape[0] // 2 + 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+        elif current_center == "R":
+            # R이 정면에 위치하도록 화살표를 그린다. 좌에서 우로 가는 화살표를 그려야함
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+        elif current_center == "B":
+            # B가 정면에 위치하도록 화살표를 그린다. R의 경우와 같은 방향으로 화살표를 그려야함
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+        elif current_center == "L":
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+        elif current_center == "U":
+            # U가 정면에 위치하도록 화살표를 그린다. 왼쪽에서 오른쪽으로 가다가 중간에 위로 꺾는 화살표를 그려야함 총 2개를 그려야겠지.
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2 - 50), (0, 0, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+        elif current_center == "D":
+            # D가 정면에 위치하도록 화살표를 그린다. U의 경우와 같은 방향으로 화살표를 그려야함
+            cv2.arrowedLine(frame, (frame.shape[1] // 2, frame.shape[0] // 2 + 50), (frame.shape[1] // 2, frame.shape[0] // 2 - 50), (0, 0, 0), 2)
+
 
     def run(self):
         print("Thread is running")
         while self.cap.isOpened():
-            ret, frame = self.cap.read()
+            ret, self.frame = self.cap.read()
             if not ret:
                 break
             # ROI 설정
-            height, width, _ = frame.shape
+            height, width, _ = self.frame.shape
             roi_size = min(height, width) // 2
             roi_x = (width - roi_size) // 2
             roi_y = (height - roi_size) // 2
-            roi = frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size]
+            roi = self.frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size]
             self.hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
             sub_roi_size = roi_size // 3
             self.face_info = ""
@@ -52,12 +90,15 @@ class ColorDetectorThread(QThread):
                     
                     self.face_info += color_name
 
-            frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size] = roi
+            self.frame[roi_y:roi_y + roi_size, roi_x:roi_x + roi_size] = roi
 
-            cv2.circle(frame, (width // 2, height // 2), 10, (255, 255, 255), 1)
+            cv2.circle(self.frame, (width // 2, height // 2), 10, (255, 255, 255), 1)
+
+            if self.capture_help_mode:
+                self.draw_help_arrow(self.capture_order_list[-1], self.frame)
 
             # Qt에서 사용할 수 있는 이미지로 변환
-            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb_image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_image.shape
             bytes_per_line = ch * w
             qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
@@ -83,6 +124,19 @@ class ColorDetectorThread(QThread):
         if "u" in self.face_info:
             print("Face information is invalid color:", self.face_info)
             return False
+        
+        if self.capture_help_mode:
+            if self.capture_order_list[-1] == center:
+                self.capture_order_list.pop()
+            else: 
+                print("Not matched center and capture order:", center, self.capture_order_list[-1])
+                print("Please capture again ", self.capture_order_list[-1])
+                return False
+            if len(self.capture_order_list) == 0:
+                self.capture_help_mode = False
+                print("Capture Help Mode is finished")
+        else:
+            pass
 
         self.cube.updateFace(center, captured_face)
         return True
