@@ -1,3 +1,4 @@
+import json
 import numpy as np
 
 class Color_HSV:
@@ -53,6 +54,47 @@ COLORS = {
     'w': Color_HSV(min_hsv=(0, 0, 50), max_hsv=(180, 50, 255)),
 }
 
+def standard_color_info_save(name: str):
+    global COLORS
+
+    data = {}
+
+    # JSON 파일이 이미 존재하면 기존 데이터를 로드
+    try:
+        with open('color_info.json', 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        pass
+
+    # 현재 COLORS 데이터의 main_hsv 정보만 새로운 이름으로 저장
+    color_data = {
+        color_name: color_hsv.main_hsv.tolist() if isinstance(color_hsv.main_hsv, np.ndarray) else color_hsv.main_hsv
+        for color_name, color_hsv in COLORS.items()
+    }
+    data[name] = color_data
+
+    # JSON 파일에 저장
+    with open('color_info.json', 'w') as f:
+        json.dump(data, f, indent=4)
+
+def standard_color_info_load(name: str):
+    global COLORS
+
+    # JSON 파일에서 데이터를 로드
+    try:
+        with open('color_info.json', 'r') as f:
+            data = json.load(f)
+
+        if name in data:
+            color_data = data[name]
+            for color_name, main_hsv in color_data.items():
+                if color_name in COLORS:
+                    COLORS[color_name].update_hsv(main_hsv)
+            print(f"Loaded color info for {name}:", COLORS)
+        else:
+            print(f"No color info found for {name}")
+    except FileNotFoundError:
+        print("No color info file found")
 
 class ColorUtils:
     @staticmethod

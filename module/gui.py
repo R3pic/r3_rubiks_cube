@@ -1,13 +1,14 @@
+import json
 import os
 import sys
 import colorsys
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QLineEdit
+from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QLineEdit, QInputDialog, QMessageBox, QComboBox
 from PyQt5.QtGui import QKeyEvent, QPixmap
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from module.color import Color_HSV, COLORS, ColorUtils
+from module.color import Color_HSV, COLORS, ColorUtils, standard_color_info_load, standard_color_info_save
 from module.cube import Cube
 from module.color_detector import ColorDetectorThread
 
@@ -51,6 +52,13 @@ class App(QMainWindow):
         self.capture_help_button = QPushButton('Capture Helper Start')
         self.leftLayout.addWidget(self.capture_help_button)
 
+        self.standard_combo = QComboBox()
+        self.standard_combo_update()
+        self.standard_combo.currentTextChanged.connect(self.combo_box_selection_changed)
+        self.leftLayout.addWidget(self.standard_combo)
+
+        self.color_load()
+
         # 슬라이더 추가
         self.add_color_sliders('Red', COLORS['r'])
         self.add_color_sliders('Green', COLORS['g'])
@@ -58,6 +66,10 @@ class App(QMainWindow):
         self.add_color_sliders('Yellow', COLORS['y'])
         self.add_color_sliders('White', COLORS['w'])
         self.add_color_sliders('Orange', COLORS['o'])
+
+        self.standard_color_info_save_button = QPushButton('Save Standard Color Info')
+        self.leftLayout.addWidget(self.standard_color_info_save_button)
+        self.standard_color_info_save_button.clicked.connect(self.standard_color_info_save_button_clicked)
 
         # 우측 레이아웃
         self.video_layout = QVBoxLayout()
@@ -108,6 +120,39 @@ class App(QMainWindow):
         self.solve_moves_label.setText('Cube Reset.. Capture Again..')
         self.solve_button.setEnabled(False)
 
+    def color_load(self):
+        # 파일이 존재하면 로드하고, 맨 처음 객체 이름으로 로드하기
+        if os.path.exists('color_info.json'):
+            with open('color_info.json', 'r') as f:
+                data = json.load(f)
+                first_name = list(data.keys())[0]
+                standard_color_info_load(first_name)
+
+    def standard_combo_update(self):
+        self.standard_combo.clear()
+        try:
+            with open('color_info.json', 'r') as f:
+                data = json.load(f)
+                self.standard_combo.addItems(data.keys())
+        except FileNotFoundError:
+            self.standard_combo.addItem("No data available")
+
+    def combo_box_selection_changed(self, name: str):
+        if name and name != "No data available":
+            standard_color_info_load(name)
+            for color_name, color_hsv in COLORS.items():
+                self.gui_update(ColorUtils.get_long_color_name(color_name), color_hsv.main_hsv)
+
+    def standard_color_info_save_button_clicked(self):
+        # 메시지 박스를 이용해서 이름 입력받기
+        name, ok = QInputDialog.getText(self, '기본 색상 저장', '이름을 입력하세요:')
+        if ok:
+            if name:
+                standard_color_info_save(name)
+                self.standard_combo_update()
+            else:
+                QMessageBox.warning(self, "경고", "이름을 입력하세요!", QMessageBox.Ok)
+
     def add_color_sliders(self, color_name: str, color_hsv: Color_HSV):
         # 그룹 레이아웃
         group_layout = QHBoxLayout()
@@ -120,7 +165,7 @@ class App(QMainWindow):
 
         color_display = QLabel()
         color_display.setFixedSize(50, 20)
-        color_display.setStyleSheet(f'background-color: {self.hsv_to_rgb_css(color_hsv.min_hsv)}')
+        color_display.setStyleSheet(f'background-color: {self.hsv_to_rgb_css(color_hsv.main_hsv)}')
         group_layout.addWidget(color_display)
 
         update_button = QPushButton(f'Standard Color Update ({color_name}))')
