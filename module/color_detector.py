@@ -40,19 +40,19 @@ class ColorDetectorThread(QThread):
             cv2.putText(frame, "D (Down)", (frame.shape[1] // 2 - 10, frame.shape[0] // 2 + 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         elif current_center == "R":
             # R이 정면에 위치하도록 화살표를 그린다. 좌에서 우로 가는 화살표를 그려야함
-            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (255, 255, 0), 2)
         elif current_center == "B":
             # B가 정면에 위치하도록 화살표를 그린다. R의 경우와 같은 방향으로 화살표를 그려야함
-            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (255, 255, 0), 2)
         elif current_center == "L":
-            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (255, 255, 0), 2)
         elif current_center == "U":
             # U가 정면에 위치하도록 화살표를 그린다. 왼쪽에서 오른쪽으로 가다가 중간에 위로 꺾는 화살표를 그려야함 총 2개를 그려야겠지.
-            cv2.arrowedLine(frame, (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2 + 50), (0, 0, 0), 2)
-            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (0, 0, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2 + 50), (255, 255, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2 + 50, frame.shape[0] // 2), (frame.shape[1] // 2 - 50, frame.shape[0] // 2), (255, 255, 0), 2)
         elif current_center == "D":
             # D가 정면에 위치하도록 화살표를 그린다. U의 경우와 같은 방향으로 화살표를 그려야함
-            cv2.arrowedLine(frame, (frame.shape[1] // 2, frame.shape[0] // 2 + 50), (frame.shape[1] // 2, frame.shape[0] // 2 - 50), (0, 0, 0), 2)
+            cv2.arrowedLine(frame, (frame.shape[1] // 2, frame.shape[0] // 2 + 50), (frame.shape[1] // 2, frame.shape[0] // 2 - 50), (255, 255, 0), 2)
 
 
     def run(self):
